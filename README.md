@@ -47,83 +47,261 @@ export GOOGLE_API_KEY="your-api-key-here"
 python main.py
 ```
 
-## 🤖 Agents Overview
+## 🔧 Running with Google ADK
 
-### Root Agent: `communities_data_agent`
+### ADK Setup
 
-- **Purpose**: Orchestrates community data collection workflow
-- **Model**: Gemini 2.0 Flash
-- **Capabilities**:
-  - Coordinates sub-agents for data collection
-  - Manages data validation and cleaning
-  - Provides structured community data output
+This project is built using Google's Agent Development Kit (ADK). Here's how to set it up and run it:
 
-### Sub-Agent: `google_scraper_agent`
+#### 1. Install Google ADK
 
-- **Purpose**: Scrapes community data from Google search results
-- **Tools**: Google Search integration
-- **Output**: Structured community information with metadata
+```bash
+# Install the Google ADK CLI
+pip install google-adk
 
-## 📝 Usage Examples
+# Verify installation
+adk --version
+```
 
-### Basic Usage
+#### 2. Configure ADK
+
+```bash
+# Set up your Google API key
+export GOOGLE_API_KEY="your-google-genai-api-key"
+
+# Or create a .env file
+echo "GOOGLE_API_KEY=your-google-genai-api-key" > .env
+```
+
+#### 3. Run with ADK CLI
+
+```bash
+# Start the ADK server
+adk run mataconnect_data_agent
+
+# This will start a local server (usually at http://localhost:8000)
+# You can then interact with your agent through the ADK interface
+```
+
+#### 4. Using ADK with Python
 
 ```python
 from google.adk.runners import InMemoryRunner
 from mataconnect_data_agent.agent import root_agent
 
-# Initialize runner
+# Initialize the runner
 runner = InMemoryRunner(agent=root_agent)
 
-# Run agent to collect community data
-result = runner.run("Find technology communities in San Francisco")
+# Run the agent
+result = runner.run("enrich communities")
 
-# Access results
-print(f"Found {len(result.communities)} communities")
+# Access the results
+print(result)
 ```
 
-### Using Individual Sub-Agents
+#### 5. ADK Development Mode
 
-```python
-from mataconnect_data_agent.sub_agents.google_scraper import google_scraper_agent
-
-# Use just the scraper agent
-runner = InMemoryRunner(agent=google_scraper_agent)
-result = runner.run("Search for developer communities in London")
-```
-
-## 🔧 Configuration
-
-### Agent Configuration
-
-- **Model**: Gemini 2.0 Flash
-- **Temperature**: Optimized for consistent data collection
-- **Output Format**: Structured JSON with community data schemas
-- **Tools**: Google Search + custom validation tools
-
-### Environment Variables
+For development and debugging:
 
 ```bash
-GOOGLE_API_KEY=your-google-genai-api-key
+# Run in development mode with hot reload
+adk run mataconnect_data_agent --dev
+
+# Run with verbose logging
+adk run mataconnect_data_agent --verbose
+
+# Run on a specific port
+adk run mataconnect_data_agent --port 8080
 ```
 
-## 🎯 Key Features
+#### 6. ADK Agent Testing
 
-- ✅ **Google ADK Compliant**: Follows official ADK patterns and best practices
-- ✅ **Multi-Agent Architecture**: Modular, scalable design for different data sources
-- ✅ **Type Safety**: Pydantic models for data validation and consistency
-- ✅ **Structured Output**: Consistent JSON responses with defined schemas
-- ✅ **Extensible**: Easy to add new data sources and processing agents
-- ✅ **Well Documented**: Clear structure and comprehensive examples
+```bash
+# Test your agent with a specific prompt
+adk test mataconnect_data_agent "Find women's communities in London"
 
-## 📚 Additional Resources
+# Run tests with specific parameters
+adk test mataconnect_data_agent --params '{"limit": 5}'
+```
 
-- [Google ADK Documentation](https://google.github.io/adk-docs/)
-- [ADK Samples Repository](https://github.com/google/adk-samples)
-- [Google GenAI Python SDK](https://github.com/google/generative-ai-python)
-- [Pydantic Documentation](https://pydantic-docs.helpmanual.io/)
+### ADK Project Structure
 
-**Note**: This project is built using Google's Agent Development Kit (ADK) and follows the patterns established in the [ADK samples repository](https://github.com/google/adk-samples/tree/main/python/agents/brand-search-optimization).
+The project follows ADK conventions:
+
+```
+mataconnect_data_agent/
+├── agent.py                    # Main agent definition
+├── prompt.py                   # Agent prompts
+├── sub_agents/                 # Sub-agent modules
+│   ├── google_scraper/         # Google scraping agent
+│   └── community_enricher/     # Community enrichment agent
+├── shared_libraries/           # Shared utilities
+│   ├── database.py            # Database models
+│   ├── database_tool.py       # Database tools
+│   └── types.py               # Type definitions
+└── main.py                    # Entry point
+```
+
+### ADK Configuration
+
+#### Agent Configuration
+
+The main agent is configured in `agent.py`:
+
+```python
+communities_data_agent = LlmAgent(
+    name="communities_data_agent",
+    model="gemini-2.0-flash",
+    description="Get communities data from different sources, source for fields, and clean them",
+    tools=[
+        AgentTool(agent=google_scraper_agent),
+        AgentTool(agent=community_enricher_agent),
+        save_community_info_to_db,
+        get_communities_to_enrich,
+        save_enriched_community_to_db,
+    ],
+    instruction=prompt.COMMUNITIES_DATA_AGENT_INSTRUCTION,
+)
+```
+
+#### Tool Configuration
+
+Tools are defined in `shared_libraries/database_tool.py`:
+
+```python
+def save_enriched_community_to_db(enriched_data: dict) -> Dict[str, Any]:
+    """Save enriched community data to the database."""
+    # Implementation here
+```
+
+### ADK Workflows
+
+#### 1. Community Data Collection
+
+```bash
+# Collect community data from Google
+adk run mataconnect_data_agent "Search for women's tech communities in San Francisco"
+```
+
+#### 2. Community Enrichment
+
+```bash
+# Enrich existing communities
+adk run mataconnect_data_agent "enrich communities"
+```
+
+#### 3. Database Operations
+
+```bash
+# Get communities to enrich
+adk run mataconnect_data_agent "get communities to enrich"
+
+# Save community data
+adk run mataconnect_data_agent "save community data"
+```
+
+### ADK Debugging
+
+#### Enable Debug Logging
+
+```bash
+# Set debug environment variable
+export ADK_DEBUG=1
+
+# Run with debug output
+adk run mataconnect_data_agent --debug
+```
+
+#### View Agent Logs
+
+```bash
+# View agent execution logs
+adk logs mataconnect_data_agent
+
+# Follow logs in real-time
+adk logs mataconnect_data_agent --follow
+```
+
+#### Agent State Inspection
+
+```python
+from google.adk.runners import InMemoryRunner
+from mataconnect_data_agent.agent import root_agent
+
+runner = InMemoryRunner(agent=root_agent)
+
+# Run with state inspection
+with runner.run_with_state("enrich communities") as context:
+    print(f"Agent state: {context.state}")
+    print(f"Tool calls: {context.tool_calls}")
+```
+
+### ADK Deployment
+
+#### Local Development
+
+```bash
+# Run locally for development
+adk run mataconnect_data_agent --local
+```
+
+#### Production Deployment
+
+```bash
+# Deploy to Google Cloud
+adk deploy mataconnect_data_agent --project your-gcp-project
+
+# Deploy with custom configuration
+adk deploy mataconnect_data_agent --config production.yaml
+```
+
+### ADK Best Practices
+
+1. **Agent Design**: Keep agents focused on specific tasks
+2. **Tool Integration**: Use tools for external operations (database, APIs)
+3. **Error Handling**: Implement robust error handling in tools
+4. **State Management**: Use ADK state for complex workflows
+5. **Testing**: Test agents with various inputs and edge cases
+
+### Troubleshooting ADK
+
+#### Common Issues
+
+1. **API Key Issues**:
+
+   ```bash
+   # Verify API key is set
+   echo $GOOGLE_API_KEY
+
+   # Test API key
+   adk test-api-key
+   ```
+
+2. **Agent Not Starting**:
+
+   ```bash
+   # Check agent configuration
+   adk validate mataconnect_data_agent
+
+   # Run with verbose output
+   adk run mataconnect_data_agent --verbose
+   ```
+
+3. **Tool Errors**:
+
+   ```bash
+   # Test individual tools
+   adk test-tool save_enriched_community_to_db
+
+   # Check tool configuration
+   adk inspect-tools mataconnect_data_agent
+   ```
+
+#### Getting Help
+
+- [ADK Documentation](https://google.github.io/adk-docs/)
+- [ADK GitHub Repository](https://github.com/google/adk)
+- [ADK Samples](https://github.com/google/adk-samples)
 
 # MATA Connect Data Agent
 
