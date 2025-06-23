@@ -7,3 +7,7 @@ sqlalchemy>=2.0.0
 alembic>=1.12.0
 aiohttp
 asyncio
+absl-py
+python-dotenv
+google-cloud-aiplatform[adk,agent_engines]>=1.94.0
+google-cloud-secret-manager
